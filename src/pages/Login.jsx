@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,77 +12,80 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email: email.trim(), 
+      password 
     });
-
-    setLoading(false);
 
     if (error) {
       alert("Error: " + error.message);
-    } else {
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('perfiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile?.role === 'admin') {
       navigate('/admin');
+    } else {
+      navigate('/mis-citas');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      
-      {/* Fondos Decorativos (Glow) */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] -z-10 animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] -z-10" />
-
-      <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+    <div className="max-w-md mx-auto px-4 mt-20">
+      <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl -z-10"></div>
         
-        {/* Barra decorativa superior */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
-
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg mx-auto mb-4">
-            CF
-          </div>
-          <h2 className="text-3xl font-bold text-white">Bienvenido</h2>
-          <p className="text-gray-400 text-sm mt-2">Acceso exclusivo para administradores</p>
-        </div>
+        <h2 className="text-4xl font-black text-white mb-2">Bienvenido</h2>
+        <p className="text-zinc-500 mb-8">Ingresa tus credenciales para continuar.</p>
         
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">Email Corporativo</label>
+            <label className="text-xs font-bold text-zinc-400 uppercase ml-2">Email</label>
             <input 
-              type="email" 
-              required
-              className="w-full bg-zinc-950/50 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder-zinc-600"
-              placeholder="admin@citafacil.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="email" placeholder="correo@ejemplo.com" required
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 text-white focus:border-blue-500 outline-none transition-all"
+              value={email} onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">Contraseña</label>
+            <div className="flex justify-between items-center ml-2">
+              <label className="text-xs font-bold text-zinc-400 uppercase">Contraseña</label>
+              {/* --- ENLACE DE RECUPERACIÓN AÑADIDO --- */}
+              <Link 
+                to="/reset-password" 
+                className="text-xs font-bold text-blue-500 hover:text-blue-400 transition-colors"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <input 
-              type="password" 
-              required
-              className="w-full bg-zinc-950/50 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder-zinc-600"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="password" placeholder="••••••••" required
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 text-white focus:border-blue-500 outline-none transition-all"
+              value={password} onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
           <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 rounded-xl font-bold text-lg hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading} 
+            className="w-full mt-4 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
           >
-            {loading ? 'Verificando...' : 'Iniciar Sesión'}
+            {loading ? 'Validando...' : 'Entrar'}
           </button>
         </form>
 
-        <div className="mt-8 text-center">
-          <p className="text-xs text-zinc-500">
-            Sistema protegido por CitaFácil Security™
+        <div className="mt-8 pt-8 border-t border-zinc-800 text-center">
+          <p className="text-zinc-500">
+            ¿No tienes cuenta? {' '}
+            <Link to="/registro" className="text-blue-500 font-bold hover:underline">
+              Regístrate aquí
+            </Link>
           </p>
         </div>
       </div>
